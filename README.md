@@ -108,12 +108,27 @@ streamlit run app.py
 
 ## 📜 Registro de Auditoria (SQL)
 
-Todas as ações de entrada (`enfileirar`) e saída (`desenfileirar`) são registradas transacionalmente no arquivo de auditoria `logs.sql`:
+Todas as ações de entrada (`enfileirar`) e saída (`desenfileirar`) são registradas no arquivo de auditoria `logs.sql` pela classe `AuditoriaSQL` (`auditoria.py`). Para ativar, basta passar a auditoria ao criar a fila:
+
+```python
+from auditoria import AuditoriaSQL
+
+fila = FilaAtendimento(auditoria=AuditoriaSQL("logs.sql"))
+```
+
+Na primeira execução o arquivo é criado com as tabelas `log_enfileiramentos` e `log_atendimentos`. Depois disso, cada operação gera um `INSERT`:
 
 ```sql
+-- Entrada na fila (enfileirar)
+INSERT INTO log_enfileiramentos (chamado_id, assunto, classe, prioridade_original, horario_criacao) 
+VALUES (103, 'Queda do Servidor', 'ChamadoCritico', 4, '2026-11-12 17:32:42');
+
+-- Saída da fila (desenfileirar)
 INSERT INTO log_atendimentos (chamado_id, assunto, prioridade_final, tempo_espera_seg, estourou_sla) 
-VALUES (103, 'Queda do Servidor de Banco de Dados', 4, 35.2, 0);
+VALUES (103, 'Queda do Servidor', 4, 35.2, 1);
 ```
+
+O arquivo pode ser importado direto no banco (ex.: `sqlite3 banco.db < logs.sql`).
 
 ---
 

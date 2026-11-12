@@ -86,16 +86,22 @@ class ChamadoBaixo(Chamado): # Chamado de prioridade baixa, com prioridade origi
             self.pr_atual = 2
 
 class FilaAtendimento:
-    def __init__(self):
+    def __init__(self, auditoria=None): # Recebe opcionalmente um objeto AuditoriaSQL para registrar as entradas e saídas da fila.
         self.chamados: list[Chamado] = []
+        self.auditoria = auditoria
 
     def enfileirar(self, chamado: Chamado): # Método para adicionar um chamado à fila de atendimento, aplicando o aging e reordenando a lista de chamados.
         self.chamados.append(chamado)
-        self.reordenar()  
+        self.reordenar()
+        if self.auditoria is not None:
+            self.auditoria.registrar_enfileiramento(chamado)
 
     def desenfileirar(self): # Método para remover e retornar o chamado com maior prioridade da fila de atendimento, aplicando o aging e reordenando a lista de chamados.
         if not self.esta_vazia():
-            return self.chamados.pop(0)
+            chamado = self.chamados.pop(0)
+            if self.auditoria is not None:
+                self.auditoria.registrar_atendimento(chamado)
+            return chamado
         return None
 
     def espiar(self): # Método para retornar o chamado com maior prioridade da fila de atendimento sem removê-lo, aplicando o aging e reordenando a lista de chamados.

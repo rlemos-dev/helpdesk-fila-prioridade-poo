@@ -1,3 +1,4 @@
+from auditoria import AuditoriaSQL
 from classes import (
     ChamadoAlto,
     ChamadoBaixo,
@@ -25,7 +26,7 @@ def gerar_massa_de_testes(fila: FilaAtendimento):
 # --- BLOCO PARA TESTAR NO VS CODE ---
 if __name__ == "__main__":
     # 1. Cria uma instância da fila
-    minha_fila = FilaAtendimento()
+    minha_fila = FilaAtendimento(auditoria=AuditoriaSQL("logs.sql"))
 
     # 2. Chama a função de massa de testes para preencher a fila
     gerar_massa_de_testes(minha_fila)
