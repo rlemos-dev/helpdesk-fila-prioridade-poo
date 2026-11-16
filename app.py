@@ -69,9 +69,7 @@ with st.sidebar:
                 )
 
             fila.enfileirar(novo_chamado)
-            auditoria.registrar_enfileiramento(
-                novo_chamado
-            )  # Grava a entrada no logs.sql
+            auditoria.registrar_enfileiramento(novo_chamado)
 
             st.session_state.contador_id += 1
             st.success("Chamado adicionado com sucesso!")
@@ -83,9 +81,7 @@ with st.sidebar:
     if st.button("✅ Atender Próximo Chamado", use_container_width=True):
         if not fila.esta_vazia():
             atendido = fila.desenfileirar()
-            auditoria.registrar_atendimento(
-                atendido
-            )  # Grava a saída no logs.sql
+            auditoria.registrar_atendimento(atendido)
 
             st.toast(
                 f"Atendendo Chamado #{atendido.id}: {atendido.assunto}",
@@ -98,7 +94,6 @@ with st.sidebar:
     if st.button("📦 Carregar Massa de Testes", use_container_width=True):
         antes = len(fila.chamados)
         gerar_massa_de_testes(fila)
-        # Regista no logs.sql cada chamado novo que entrou pela massa de testes
         for c in fila.chamados[antes:]:
             auditoria.registrar_enfileiramento(c)
 
@@ -141,3 +136,19 @@ else:
         )
 
     st.dataframe(dados_tabela, use_container_width=True)
+
+# --- VISUALIZAÇÃO / DOWNLOAD DO LOG SQL ---
+st.markdown("---")
+with st.expander("📜 Ver Logs de Auditoria SQL (logs.sql)"):
+    try:
+        with open("logs.sql", "r", encoding="utf-8") as f:
+            conteudo_sql = f.read()
+        st.code(conteudo_sql, language="sql")
+        st.download_button(
+            label="⬇️ Baixar logs.sql",
+            data=conteudo_sql,
+            file_name="logs.sql",
+            mime="text/plain",
+        )
+    except FileNotFoundError:
+        st.info("Nenhum log gerado ainda.")
