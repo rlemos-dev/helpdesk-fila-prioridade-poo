@@ -1,4 +1,5 @@
 import streamlit as st
+from auditoria import AuditoriaSQL
 from classes import (
     ChamadoAlto,
     ChamadoBaixo,
@@ -13,12 +14,16 @@ st.set_page_config(page_title="Central de Atendimento TI", layout="wide")
 
 st.title("🖥️ Central de Atendimento TI - Monitoramento de Fila e SLAs")
 
-# Mantém a fila guardada na memória enquanto a página estiver aberta
+# Inicializa a fila e o sistema de auditoria na sessão
 if "fila" not in st.session_state:
     st.session_state.fila = FilaAtendimento()
     st.session_state.contador_id = 1
 
+if "auditoria" not in st.session_state:
+    st.session_state.auditoria = AuditoriaSQL("logs.sql")
+
 fila: FilaAtendimento = st.session_state.fila
+auditoria: AuditoriaSQL = st.session_state.auditoria
 
 # Atualiza a fila aplicando o aging automaticamente a cada interação
 fila.atualizar_fila()
@@ -34,10 +39,10 @@ with st.sidebar:
             "Prioridade Base",
             options=[1, 2, 3, 4],
             format_func=lambda x: {
-                1: "1 - Baixa (SLA 120s)",
-                2: "2 - Média (SLA 90s)",
-                3: "3 - Alta (SLA 60s)",
-                4: "4 - Crítica (SLA 30s)",
+                1: "1 - Baixa",
+                2: "2 - Média",
+                3: "3 - Alta",
+                4: "4 - Crítica",
             }[x],
         )
 
@@ -46,7 +51,6 @@ with st.sidebar:
         )
 
         if btn_adicionar and assunto.strip():
-            # Instancia a subclasse específica respeitando o SLA original de cada uma
             if prioridade == 4:
                 novo_chamado = ChamadoCritico(
                     id=st.session_state.contador_id, titulo=assunto
@@ -65,6 +69,10 @@ with st.sidebar:
                 )
 
             fila.enfileirar(novo_chamado)
+            auditoria.registrar_enfileiramento(
+                novo_chamado
+            )  # Grava a entrada no logs.sql
+
             st.session_state.contador_id += 1
             st.success("Chamado adicionado com sucesso!")
             st.rerun()
@@ -75,6 +83,10 @@ with st.sidebar:
     if st.button("✅ Atender Próximo Chamado", use_container_width=True):
         if not fila.esta_vazia():
             atendido = fila.desenfileirar()
+            auditoria.registrar_atendimento(
+                atendido
+            )  # Grava a saída no logs.sql
+
             st.toast(
                 f"Atendendo Chamado #{atendido.id}: {atendido.assunto}",
                 icon="🛠️",
@@ -84,7 +96,12 @@ with st.sidebar:
             st.warning("A fila está vazia!")
 
     if st.button("📦 Carregar Massa de Testes", use_container_width=True):
+        antes = len(fila.chamados)
         gerar_massa_de_testes(fila)
+        # Regista no logs.sql cada chamado novo que entrou pela massa de testes
+        for c in fila.chamados[antes:]:
+            auditoria.registrar_enfileiramento(c)
+
         st.toast("Massa de testes carregada na fila!", icon="📥")
         st.rerun()
 
