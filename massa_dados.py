@@ -9,7 +9,7 @@ from classes import (
 
 
 def gerar_massa_de_testes(fila: FilaAtendimento):
-    """Insere um conjunto fixo de chamados para a demonstração ao vivo."""
+    """Insere um conjunto fixo de chamados sem repetir IDs já presentes na fila."""
     exemplos = [
         (ChamadoBaixo, "Atualização de Antivírus"),
         (ChamadoMedio, "Lente da Câmera Suja"),
@@ -18,7 +18,11 @@ def gerar_massa_de_testes(fila: FilaAtendimento):
         (ChamadoBaixo, "Solicitação de Recarga de Toner"),
     ]
 
-    for id_temp, (classe_chamado, titulo) in enumerate(exemplos, start=100):
+    # Busca o maior ID atual da fila para continuar a sequência sem duplicar
+    maior_id = max((c.id for c in fila.chamados), default=99)
+    inicio = max(100, maior_id + 1)
+
+    for id_temp, (classe_chamado, titulo) in enumerate(exemplos, start=inicio):
         ticket = classe_chamado(id=id_temp, titulo=titulo)
         fila.enfileirar(ticket)
 

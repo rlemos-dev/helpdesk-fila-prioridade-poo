@@ -1,4 +1,5 @@
 import streamlit as st
+
 from auditoria import AuditoriaSQL
 from classes import (
     ChamadoAlto,
@@ -144,11 +145,21 @@ with st.expander("📜 Ver Logs de Auditoria SQL (logs.sql)"):
         with open("logs.sql", "r", encoding="utf-8") as f:
             conteudo_sql = f.read()
         st.code(conteudo_sql, language="sql")
-        st.download_button(
-            label="⬇️ Baixar logs.sql",
-            data=conteudo_sql,
-            file_name="logs.sql",
-            mime="text/plain",
-        )
+
+        col_down, col_limpar = st.columns(2)
+        with col_down:
+            st.download_button(
+                label="⬇️ Baixar logs.sql",
+                data=conteudo_sql,
+                file_name="logs.sql",
+                mime="text/plain",
+                use_container_width=True,
+            )
+        with col_limpar:
+            if st.button("🗑️ Limpar Logs", use_container_width=True):
+                with open("logs.sql", "w", encoding="utf-8") as f:
+                    f.write("")
+                st.session_state.auditoria = AuditoriaSQL("logs.sql")
+                st.rerun()
     except FileNotFoundError:
         st.info("Nenhum log gerado ainda.")
